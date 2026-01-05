@@ -54,7 +54,7 @@ The workflow includes:
 
 ## 🎥 YouTube Tutorial
 
-Check out my YouTube channel for a detailed walkthrough of this workflow!
+Check out my [YouTube channel](https://www.youtube.com/@tokenizzer) for a detailed walkthrough of this workflow!
 
 ## 🛠️ Customization
 
