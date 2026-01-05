@@ -1,0 +1,489 @@
+{
+  "name": "news-assistant",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        176
+      ],
+      "id": "0dd28486-937e-427b-9252-14a74e7e2ca5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://rss.dw.com/rdf/rss-en-all",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        -32
+      ],
+      "id": "947e2a7c-6b9a-4ad0-b934-cb21817ec299",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0ab98eaa-bed9-4204-b56f-410c9ef1c94a",
+              "leftValue": "={{ $json.isoDate.toDate().format('yyyy-MM-dd') }}",
+              "rightValue": "={{ $now.minus({ hours: 3 }).format('yyyy-MM-dd') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "afterOrEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        -32
+      ],
+      "id": "30877777-bc23-4a60-aed6-d79a4a27849c",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "cityName": "Tehran"
+      },
+      "type": "n8n-nodes-base.openWeatherMap",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        352
+      ],
+      "id": "2134bb85-f743-4a2c-8778-9961dfa40ba2",
+      "name": "OpenWeatherMap",
+      "credentials": {
+        "openWeatherMapApi": {
+          "id": "qmKQ3sjWb2CMOh3p",
+          "name": "OpenWeatherMap account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Summarize these news in 2-3 sentences.\n\n\nHere are the news:\nTitle: {{ $json.title }}\nContent: {{ $json.content }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        304,
+        -32
+      ],
+      "id": "3d7acc7b-87eb-4acb-ab13-c88273fe9b01",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        176
+      ],
+      "id": "72fe2722-293f-483a-a679-04ae4f860f4f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Msj4YjnA9wiEKyTC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a concise report of the today's weather in Tehran based on the following information:\n\nweather info: {{ $json.main }}\nwind info: {{ $json.wind }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -64,
+        352
+      ],
+      "id": "2fe072ce-ce1a-440e-8811-3fb96fceb24c",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        576
+      ],
+      "id": "28cd0c39-0bf6-441c-8fac-62e299adad49",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Msj4YjnA9wiEKyTC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        704,
+        272
+      ],
+      "id": "36ceaec7-8f1e-4cdc-ac32-24f476348578",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        928,
+        272
+      ],
+      "id": "7aaae268-bdf0-401f-919d-28e049cf2956",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are my assistant that helps me with the current news and current weather. Create a very brief report based ONLY on the following context:\n\n{{ $json.text }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1136,
+        272
+      ],
+      "id": "f7edc1e8-8c76-4042-8708-c8b02f0af45a",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1104,
+        448
+      ],
+      "id": "eec3d045-362b-4004-97e9-6cefbe4ed2da",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "Msj4YjnA9wiEKyTC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=Report: \n\n{{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        272
+      ],
+      "id": "67d67f07-6ac9-4ec0-a624-3b9764ad4c4d",
+      "name": "Discord",
+      "webhookId": "6c6d57ae-db4b-4b90-8148-e4e57ece688f",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "pYENobInfVPUnTbS",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 3
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        96,
+        -32
+      ],
+      "id": "2f71dfd8-b3ae-46c3-bd70-9f47177e7eba",
+      "name": "Limit"
+    }
+  ],
+  "pinData": {
+    "Basic LLM Chain1": [
+      {
+        "json": {
+          "text": "### Tehran Weather Report\n\n**Date**: [Insert Today's Date]\n\n**Overview**:  \nTehran experienced [brief description of the weather, e.g., sunny, cloudy, rainy].\n\n**Temperature**:  \n- High: [Insert High Temperature]°C  \n- Low: [Insert Low Temperature]°C  \n\n**Wind Conditions**:  \n- Speed: [Insert Wind Speed] km/h  \n- Direction: [Insert Wind Direction]  \n\n**Humidity**:  \n- [Insert Humidity Percentage]%\n\n**Summary**:  \nOverall, it was a [positive/negative] weather day, with [any notable events, e.g., \"mild temperatures and gentle breezes\"]. \n\n**Prepared by**: [Your Name or Institution]  \n**Time**: [Insert Time of Report]"
+        }
+      }
+    ],
+    "OpenWeatherMap": [
+      {
+        "json": {
+          "coord": {
+            "lon": 51.4215,
+            "lat": 35.6944
+          },
+          "weather": [
+            {
+              "id": 800,
+              "main": "Clear",
+              "description": "clear sky",
+              "icon": "01n"
+            }
+          ],
+          "base": "stations",
+          "main": {
+            "temp": 4.84,
+            "feels_like": 4.84,
+            "temp_min": 4.84,
+            "temp_max": 4.99,
+            "pressure": 1027,
+            "humidity": 60,
+            "sea_level": 1027,
+            "grnd_level": 871
+          },
+          "visibility": 10000,
+          "wind": {
+            "speed": 1.03,
+            "deg": 0
+          },
+          "clouds": {
+            "all": 0
+          },
+          "dt": 1767542390,
+          "sys": {
+            "type": 2,
+            "id": 47737,
+            "country": "IR",
+            "sunrise": 1767498264,
+            "sunset": 1767533608
+          },
+          "timezone": 12600,
+          "id": 112931,
+          "name": "Tehran",
+          "cod": 200
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenWeatherMap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3fc5c16a-b382-488b-bf5d-529dacfd6042",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9996d0c07a726d6d8aa96aff519613d4b1522f17c838d269070725baae084fd4"
+  },
+  "id": "8W9InoKCIvs67SxL",
+  "tags": []
+}
